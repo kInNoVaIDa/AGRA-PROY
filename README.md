@@ -14,3 +14,7 @@ Día 12/05/2026
 - Especifiación del problema (Entradas y salidas).
 -  Reglas (movimientos, interacción con la celda y condición de victoria).
 - Se hizo una corrección en los casos de prueba (haciendolos menos "sencillos"
+
+Día 13/05/2026
+- Socialización de ideas para representación de estados
+- Correción de las reglas (Representación de los estados)
