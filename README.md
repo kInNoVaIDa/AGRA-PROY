@@ -20,5 +20,5 @@ Día 13/05/2026
 - Correción de las reglas (Representación de los estados)
 
 Día 24/05/2025
--Desarrollo: primera versión de solución Cube.
--Socialización de la primera versión de Cube.
+- Desarrollo: primera versión de solución Cube.
+- Socialización de la primera versión de Cube.
