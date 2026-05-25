@@ -18,3 +18,7 @@ Día 12/05/2026
 Día 13/05/2026
 - Socialización de ideas para representación de estados
 - Correción de las reglas (Representación de los estados)
+
+Día 24/05/2025
+-Desarrollo: primera versión de solución Cube.
+-Socialización de la primera versión de Cube.
