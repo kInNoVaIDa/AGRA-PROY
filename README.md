@@ -22,3 +22,7 @@ Día 13/05/2026
 Día 24/05/2025
 - Desarrollo: primera versión de solución Cube.
 - Socialización de la primera versión de Cube.
+
+Dia 29/05/2025
+- Socialización de posibles opciones de optimización de la eficiencia
+- Opciones consideradas (funcion hash, representación en struct, precalculo de orientaciones, representación la posición de los oros en bits RxC)
