@@ -1,0 +1,109 @@
+// S S G G
+// S s . S
+// s G . .
+// G . . G
+
+// pos cubo = (0,1) = 000-000
+
+// goldpos = (0,2) (0,3) (1,1) (2,1)
+// (3,0) (3,3)
+// es decir en bits
+// = 011-011|011-000|010-001|001-001|000-011|000-010
+
+// initori = packori
+// = 101 | 100 | 011 | 010 | 001 | 000
+// back  top   west  east front  bottom
+// aux = 011
+
+
+// initState es 
+// {
+//     poscube = 000-000 (0,0)
+//     packori = = 101 | 100 | 011 | 010 | 001 | 000
+//     ifgold  = 000000
+//     goldonface = 1000 | 1000 | 1000 | 1000 | 1000 | 1000
+//     goldpos = = 0011-011|0011-000|0010-001|0001-001|0000-011|0000-010
+//     goldpos = 000000000
+
+//     goldpos >> 2*3
+//     en 3x3 
+
+// }
+// dist = {
+//     {init, 0}
+//     {initstate1, 1}
+//     {initstate2, 1}
+// }
+// pq = [{1,newstate2},{2,newstate3}]
+
+// cost = 1
+// initstate = newstate1
+
+
+// bottom = 1
+// packedor = 000 | 101 | 010 | 011 | 100 | 001
+// ifgold = 000000
+// goldonfaces = 1000 | 1000 | 1000 | 1000 | 1000 | 1000
+// poscube = 001-000
+// goldpos = 011-011|011-000|010-001|001-001|000-011|000-010
+
+// c = 0
+// r = 1
+
+// 000000 != 63 correcto
+// d = 3 < 4
+// newc = 0 + dc[3] = 0 + 1 = 1
+// newr = 1 + dr[3] = 1 + 0 = 1
+
+// newpackedori = movecube(packedor, 0) = 
+// aux = 011
+// 000 | 011 | 101 | 001 | 100 | 010
+// back  top   west  east front  bottom
+
+// newbottom = 2
+// newifgold = 000000
+// newgoldonfaces = 1000 | 1000 | 1000 | 0010 | 1000 | 1000
+                 
+// newposcube = 001-001 (1,1)
+// newgoldpos = 011-011|011-000|010-001|001-001|000-011|000-010
+
+// goldindex = -1
+// i = 0  000-010 == 001-001 nope
+// i = 1  000-011 == 001-001 nope
+// i = 2  001-001 == 001-001 si
+// i = 3  010-001 == 001-001 nope
+// i = 4  011-000 == 001-001 nope
+// i = 5  011-011 == 001-001 nope
+// sale  goldindex = 2
+
+// newcost
+// goldonface = getgoldonface(newgoldonfaces, newbottom) = 8
+
+// 8 == 8 && 2 == -1 no 
+// 8 == 8 && 2 != -1 si 
+
+// se pasa addgold(newifgold, newgoldonfaces, goldindex, newbottom)
+
+// ifgold = 000100
+
+
+// newstate2
+// {
+//     newposcube = 000-001 (0,1)
+//     newpackori = = 101 | 011 | 000 | 100 | 001 | 010
+//     newifgold  = 000000
+//     newgoldonface = 1000 | 1000 | 1000 | 1000 | 1000 | 1000
+//     newgoldpos = = 011-011|011-000|010-001|001-001|000-011|000-010
+
+// }
+// newcost = 1 + 1 = 2
+
+// dist.count(newstat2) == 0 sip 
+// dist[newstate2] = 2
+// dist = {
+//     {init, 0}
+//     {initstate1, 1}
+//     {initstate2, 1}
+//     {initstate3, 2}
+// }
+// pq = [{1,newstate2}, {2,initstate3}]

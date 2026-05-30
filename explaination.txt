@@ -1,0 +1,91 @@
+La idea se basa sobre trabar en un estado en el cual sea una pareja pair
+que contenga la información necesaria como la posición y en un paquete binario
+información sobre la cara que está sobre la celda (cara inferior) y información sobre 
+que oros se encuentran en el cubo adheridos, que caras tienen oro y luego información para cada
+cara que oro tiene asociado.
+
+se trabajaría bajo una representación del cubo de modo que sus caras sean numeros
+potencias de 2, se toma el 1 como cara inicial siempre y su contrario es decir el top
+es 32, de este modo 1 = 2^0 y 32 = 2^5, si se hace sumatoria de sus exponentes
+0 + 5 = 5, esta sería la propiedad bajo la cual funcionaria el cubo, las caras opuestas
+la suma de sus exponentes deberán sumar 5, de esta forma:
+
+bottom = 1 = 2^0
+front = 2 = 2^1
+east = 8 = 2^3
+west = 4 = 2^2
+south = 16 = 2^4
+top = 32 = 2^5
+
+si 4 y 8 son caras opuestas entonces 2 + 3 deberán sumar 5 que es correcto
+para 2 que su cara contraria es 16, 1 + 4 = 5 se sigue cumpliendo.
+
+con esto se permite sacar una relación de indices para un vector golds
+que almacenaría las posiciones de cada oro dispuesto en el mapa, serían pares de la forma
+(i,j), pero para no usar pairs tambien se empaquetan en un tipo de dato long long
+para que de esta forma en un solo numero bianrio se representen ambas posiciones
+000-000
+si la posición es (2,3) quedaría de la siguiente forma 010-011, esto se haría para
+cada posición dentro del mapa,
+dado que son 6 oros en total, las posiciones dentro del vector irian de 0-5, similar con los 
+exponentes para las caras
+
+inicialmente se optó por la respresentación de la forma a continuación:
+
+la representación funcionaria de la siguiente manera, de forma bianria se tendría que
+000 -> la cara inferior 3 bits forman numeros de acuerdo a su exponente
+000000 -> que oros se encuentran sobre el cubo 6 bits
+000000 -> que caras tienen oros 6 bits
+0000-0000-0000-0000-0000-0000 -> conjunto de 4 bits por cada cara, de esta forma se guarda
+la información de que cara y que indice de oro tiene asociada para rastrear el oro
+
+en lo anterior hay 39 bits
+
+ejemplo
+-bottom = 1
+-golds = [001-010, 010-101...etc]
+-el oro del indice 0 fue agarrado y se encuentra en el cubo
+-la cara 3 agarró el oro
+
+en el indice 0 en golds se encuentra la posicion (1,2) es decir que en el mapa en esa posicion
+se encuentra un oro. Los indices como son de 0-5 podria representarse en 3 bits la información
+ya que podemos formar hasta el numero 7 que es lo maximo que tendria en terminos de indice el mapa
+es decir que la maxima posicion es (7,7) y minima (0,0) correspondiente a 111 y 000
+
+pero cada cara tiene disponible 4 bits no 3, los 4 bits son para que de alguna forma si se enceinde
+todos los bits daria 15 y de esta forma identificar si está vacia la cara, ya que no basta con poner 0000 porque 
+significaria que el oro de la posición indexada 0, ha sido agarrada por esa cara,
+
+siguiendo con el ejemplo
+000 -> ya que para formar el bottom = 1 es 2^0
+000001 -> ya que el indice asociado al oro agarrado es 0, cada bit es una posicion
+001000 -> cara 3 agarró el oro, tambien cada posiicón es un bit
+1111-1111-1111-0000-1111-1111 la cara 3 tiene asociado el indice 0 es decir registra en la cara
+que oro tiene
+las caras van de derecha a izquierda, la tercerca cara son los 4 bits en 0 ya que es 0 el indice
+
+puede llegar a ser redundante tener la información de que oro está en el cubo y que cara tiene oro
+ya que esa informaicón la da los 24 bits que es la inforamción de cada cara, 
+lo anterior solo es para tener acceso más facil, pero se podría representar solo con
+000
+1111-1111-1111-1111-1111-1111 
+con 27 bits,
+
+si se tuviera en cuenta además empaquetar la información de la posición del cubo
+se podría hacer de modo que 
+000000 -> pos del cubo, repesentación igual al empacar las posiciones del oro
+000 -> cara bottom
+1111-1111-1111-1111-1111-1111 
+todo representado en 33 bits si se hiciera de esta forma
+
+al realizar movimientos en el cubo, se establece una funcion de movimientos
+la cual mapea cada movimiento tomando en cuenta el vector que establece hacia donde se puede mover
+dr = [north, south, 0, 0] en la fila solo mueve norte o sur
+dc = [0, 0, east, west] en columna se desplaza de este a oeste
+asi que la funcion para mover, toma en cuenta el valor m, que viene siendo en escencia un indice
+son 4 posiciones asi que va de 0-3, 0 -> north, 1->south, 2->east, 3->west
+se realizan los respectivos cambios de orientacion segun el caso
+
+
+
+
