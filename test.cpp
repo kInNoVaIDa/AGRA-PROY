@@ -8,11 +8,10 @@ struct State {
     int pos;
     int packedori;
     int ifgold;
-    long long goldonfaces;
     long long goldpos;
 
-    State(int p, int ori, int ifg, long long gof, long long gp) {
-        pos = p, packedori = ori, ifgold = ifg, goldonfaces = gof,  goldpos = gp;
+    State(int p, int ori, int ifg,long long gp) {
+        pos = p, packedori = ori, ifgold = ifg, goldpos = gp;
         bottom = packedori & 7;
     }
     int getBottom() {
@@ -21,8 +20,6 @@ struct State {
     void addGoldtoFace(int posgold, int C) {
         bottom = getBottom();
         ifgold = ifgold | (1 << getBottom());
-        goldonfaces = goldonfaces & ~((long long)127 << (bottom * 7));
-        goldonfaces = goldonfaces | ((long long)posgold << (bottom * 7));
         
         int j = posgold & 7;
         int i = (posgold >> 3) & 7; 
@@ -31,15 +28,12 @@ struct State {
     void subGoldfromFace(int C) {
         bottom = getBottom();
         ifgold = ifgold & ~(1 << bottom);
-        goldonfaces = (goldonfaces & ~((long long)127 << bottom * 7)) | ((long long)64 << bottom*7);
         
         int j = pos & 7;
         int i = (pos >> 3) & 7;
         goldpos = goldpos | ((long long)1 << ((i * C) + j));
     }
-    int getGoldonFace() {
-        return (goldonfaces >> (bottom * 7)) & 127;
-    }
+
     int moveCube(int dir) {
     int bottom = packedori & 7;
     int front = (packedori >> 3) & 7;
@@ -80,7 +74,6 @@ struct State {
     
     bool operator==(const State &b) const {
         return (pos == b.pos) && (packedori == b.packedori)
-        && (ifgold == b.ifgold) && (goldonfaces == b.goldonfaces)
         && (goldpos == b.goldpos);
     }
     bool operator<(const State &b) const {
@@ -99,7 +92,6 @@ namespace std {
             combineHash(result, hash<int>{}(a.pos));
             combineHash(result, hash<int>{}(a.packedori));
             combineHash(result, hash<int>{}(a.ifgold));
-            combineHash(result, hash<long long>{}(a.goldonfaces));
             combineHash(result, hash<long long>{}(a.goldpos));
 
             return result;
@@ -115,6 +107,8 @@ int packOri(int bottom, int front, int east, int west, int top, int back) {
 
 int collectAllGolds(State init, int R, int C, int A, int B) {
     dist.clear();
+    dist.reserve(3000000);
+
     using rename_state = pair<int, State>;
     priority_queue<rename_state, vector<rename_state>, greater<rename_state>> pq;
     dist[init] = 0;
@@ -127,7 +121,6 @@ int collectAllGolds(State init, int R, int C, int A, int B) {
         int cost = top.first;
         State initState = top.second;
         if (cost == dist[initState]) {
-
             if (initState.ifgold != 63) {
                 int newc, newr;
                 int c = initState.pos & 7;
@@ -138,7 +131,7 @@ int collectAllGolds(State init, int R, int C, int A, int B) {
                     newr = r + dr[d];
                     if (newc >= 0 && newc < C && newr >= 0 && newr < R) {
                         int newposcube = newr << 3 | newc;
-                        State newState(newposcube, initState.moveCube(d), initState.ifgold, initState.goldonfaces, initState.goldpos);
+                        State newState(newposcube, initState.moveCube(d), initState.ifgold, initState.goldpos);
 
                         int cellhasgold = -1;
                         if (((newState.goldpos >> ((newr*C) + newc)) & 1) == 1) {
@@ -146,20 +139,21 @@ int collectAllGolds(State init, int R, int C, int A, int B) {
                         }
 
                         int newcost;
-                        int goldonface = newState.getGoldonFace();
+                        int bottom = newState.getBottom();
+                        bool facesHasgold = (newState.ifgold & (1 << bottom)) != 0;
                         // cara sin oro y celda sin oro costo A
-                        if (goldonface == 64 && cellhasgold == -1) {
+                        if (!facesHasgold && cellhasgold == -1) {
                             newcost = A + cost;
                         //cara sin oro y celda con oro costo B
-                        } else if (goldonface == 64 && cellhasgold != -1) {
+                        } else if (!facesHasgold && cellhasgold != -1) {
                             // addGoldtoface(newifgold, newgoldonfaces, cellhasgold, newbottom, newgoldpos, C);
                             newState.addGoldtoFace(cellhasgold, C);
                             newcost = B + cost;
                         // cara con oro y celda con oro costo A
-                        } else if (goldonface != 64 && cellhasgold != -1) {
+                        } else if (facesHasgold && cellhasgold != -1) {
                             newcost = A + cost;
                             // cara con oro y celda sin oro A
-                        } else if (goldonface != 64 && cellhasgold == -1) {
+                        } else if (facesHasgold && cellhasgold == -1) {
                             // subGoldfromface(newifgold, newgoldonfaces, newbottom, newposcube, newgoldpos, C);
                             newState.subGoldfromFace(C);
                             newcost = A + cost;
@@ -209,8 +203,7 @@ int main() {
             ++i;
         }
         int initori = packOri(0,1,2,3,4,5);
-        long long initGof = ((long long)64 << 35) | ((long long)64 << 28) | ((long long)64 << 21) | ((long long)64 << 14) | ((long long)64 <<  7) | (long long)64;
-        State initState(cpos, initori, 0, initGof, goldpos);
+        State initState(cpos, initori, 0, goldpos);
         int result = collectAllGolds(initState, R, C, A, B);
         if (result == -1){
             cout << "Oh my God, they killed Kenny!" << endl;
