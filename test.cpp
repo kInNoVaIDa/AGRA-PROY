@@ -146,7 +146,7 @@ int collectAllGolds(State init, int R, int C, int A, int B) {
                             newcost = A + cost;
                         //cara sin oro y celda con oro costo B
                         } else if (!facesHasgold && cellhasgold != -1) {
-                            // addGoldtoface(newifgold, newgoldonfaces, cellhasgold, newbottom, newgoldpos, C);
+                            
                             newState.addGoldtoFace(cellhasgold, C);
                             newcost = B + cost;
                         // cara con oro y celda con oro costo A
@@ -154,7 +154,7 @@ int collectAllGolds(State init, int R, int C, int A, int B) {
                             newcost = A + cost;
                             // cara con oro y celda sin oro A
                         } else if (facesHasgold && cellhasgold == -1) {
-                            // subGoldfromface(newifgold, newgoldonfaces, newbottom, newposcube, newgoldpos, C);
+                            
                             newState.subGoldfromFace(C);
                             newcost = A + cost;
                         }
