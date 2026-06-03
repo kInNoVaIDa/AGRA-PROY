@@ -4,7 +4,6 @@
 #include <queue>
 using namespace std;
 struct State {
-    int bottom;
     int pos;
     int packedori;
     int ifgold;
@@ -13,13 +12,12 @@ struct State {
 
     State(int p, int ori, int ifg, long long gof, long long gp) {
         pos = p, packedori = ori, ifgold = ifg, goldonfaces = gof,  goldpos = gp;
-        bottom = packedori & 7;
     }
     int getBottom() {
         return packedori & 7;
     }
     void addGoldtoFace(int posgold, int C) {
-        bottom = getBottom();
+        int bottom = packedori & 7;
         ifgold = ifgold | (1 << getBottom());
         goldonfaces = goldonfaces & ~((long long)127 << (bottom * 7));
         goldonfaces = goldonfaces | ((long long)posgold << (bottom * 7));
@@ -29,7 +27,7 @@ struct State {
         goldpos = goldpos & ~((long long)1 <<((i*C) + j));
     }
     void subGoldfromFace(int C) {
-        bottom = getBottom();
+        int bottom = packedori & 7;
         ifgold = ifgold & ~(1 << bottom);
         goldonfaces = (goldonfaces & ~((long long)127 << bottom * 7)) | ((long long)64 << bottom*7);
         
@@ -38,6 +36,7 @@ struct State {
         goldpos = goldpos | ((long long)1 << ((i * C) + j));
     }
     int getGoldonFace() {
+        int bottom = packedori & 7;
         return (goldonfaces >> (bottom * 7)) & 127;
     }
     int moveCube(int dir) {
@@ -94,8 +93,13 @@ namespace std {
             auto combineHash = [](size_t &seed, size_t hashValue) {
                 seed ^= hashValue + 0x9e3779b9 + (seed << 6) + (seed >> 2);
             };
-
             size_t result = 0;
+
+            result ^= hash<int>{}(a.pos) + (result << 6) + (result >> 2);
+            result ^= hash<int>{}(a.pos) + (result << 6) + (result >> 2);
+            result ^= hash<int>{}(a.pos) + (result << 6) + (result >> 2);
+            result ^= hash<int>{}(a.pos) + (result << 6) + (result >> 2);
+            
             combineHash(result, hash<int>{}(a.pos));
             combineHash(result, hash<int>{}(a.packedori));
             combineHash(result, hash<int>{}(a.ifgold));
@@ -190,7 +194,7 @@ int main() {
         string row;
 
         int i = 0, j;
-        int cpos;
+        int cpos = 0;
         long long goldpos = 0;
         int shift = 0;
         while (i < R) {

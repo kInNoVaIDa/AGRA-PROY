@@ -1,238 +1,232 @@
 #include <iostream>
 #include <vector>
 #include <unordered_map>
-#include <tuple>
 #include <queue>
-#include <map>
 using namespace std;
+int orientations[6][6][4];
 
-/*
-    Corregir representación de estados de forma empaquetada, empaquetar
-    la cara tomando en cuenta las potencias de 2 como indices
-    sub mascara para saber que cara tiene oro y por ultimo otra submascara
+struct State {
+    int pos;
+    int packedori;
+    int ifgold;
+    long long goldpos;
 
-    corregir la forma de representar el diccionario de golds
-    y terminar el estruct del cubo y modificar el codigo para que funcione
-*/
+    State(int p, int ori, int ifg,long long gp) {
+        pos = p, packedori = ori, ifgold = ifg, goldpos = gp;
+    }
+    
+    void addGoldtoFace(int posgold, int C) {
+        int bottom = packedori & 7;
+        ifgold = ifgold | (1 << bottom);
+        
+        int j = posgold & 7;
+        int i = (posgold >> 3) & 7; 
+        goldpos = goldpos & ~((long long)1 <<((i*C) + j));
+    }
+    void subGoldfromFace(int C) {
+        int bottom = packedori & 7;
+        ifgold = ifgold & ~(1 << bottom);
+        
+        int j = pos & 7;
+        int i = (pos >> 3) & 7;
+        goldpos = goldpos | ((long long)1 << ((i * C) + j));
+    }
 
-map<pair<long long, long long>, int> dist;
+    int move(int dir) {
+        int bottom = packedori & 7;
+        int front = (packedori >> 3) & 7;
+
+        return orientations[bottom][front][dir];
+    }
+    
+    bool operator==(const State &b) const {
+        return (pos == b.pos) && (packedori == b.packedori)
+        && (goldpos == b.goldpos);
+    }
+    bool operator<(const State &b) const {
+        return pos < b.pos;
+    }
+};
+namespace std {
+    template<>
+    struct hash<State> {
+        size_t operator()(const State &a) const noexcept {
+            size_t result = 0;
+            result ^= hash<int>{}(a.pos) + (result << 6) + (result >> 2);
+            result ^= hash<int>{}(a.packedori) + (result << 6) + (result >> 2);
+            result ^= hash<int>{}(a.ifgold) + (result << 6) + (result >> 2);
+            result ^= hash<long long>{}(a.goldpos) + (result << 6) + (result >> 2);
+            return result;
+        }
+    };
+}
+unordered_map<State, int> dist;
 vector<int> dr = {1, -1, 0, 0};
 vector<int> dc = {0, 0, -1, 1};
-// unordered_map<int,int> opposite = {
-//     {1, 32},
-//     {2, 16},
-//     {4, 8}
-// };
-unordered_map<int, bool> faceID = {
-    {1,0}, {2,1}, {4, 2}, {8, 3}, {16, 4}, {32, 5}
-};
-// funcion solo para revisar el mapa
-void printM(vector<vector<char>> &M) {
-    for (auto &R: M) {
-        cout << "[";
-        for (auto &C: R) {
-            cout << C << ", ";
+
+int packOri(int bottom, int front, int east, int west, int top, int back) {
+    return (back << 15) | (top << 12) | (west << 9) | (east << 6) | (front << 3) | bottom;
+}
+
+int moveCube(int packedori, int dir) {
+        int bottom = packedori & 7;
+        int front = (packedori >> 3) & 7;
+        int east = (packedori >> 6) & 7;
+        int west = (packedori >> 9) & 7;
+        int top = (packedori >> 12) & 7;
+        int back = (packedori >> 15) & 7;
+
+        int aux;
+        if (dir == 0) {
+            aux = back;
+            back = bottom;
+            bottom = front;
+            front = top;
+            top = aux; 
+        } else if (dir == 1) {
+            aux = front;
+            front = bottom;
+            bottom = back;
+            back = top;
+            top = aux;
+        } else if (dir == 2) {
+            aux = west;
+            west = bottom;
+            bottom = east;
+            east = top;
+            top = aux;
+            
+        } else if (dir == 3) {
+            aux = east;
+            east = bottom;
+            bottom = west;
+            west = top;
+            top = aux;
         }
-        cout << "]" << endl;
-    }
-}
-
-struct Orientation {
-    int bottom;
-    int front;
-    int east;
-    int west; 
-    int top;
-    int back;
-};
-long long mixInf(int face, int gcube, int faceg) {
-    long long fg = 0;
-    for (int i = 0; i < 6; i++) {
-        fg = fg | ((long long)15) << (i*4);
-    }
-
-    return ((long long) face << 36) | (long long)gcube << 30 | (long long)faceg << 24 | fg;
-}
-int getbottom(long long s) {
-    return 1 << ((s >> 36) & 7);
-} 
-int getgCube(long long s) {
-    return ((s >> 30) & 63);
-}
-int getFaceg(long long s) {
-    return ((s >> 24) & 63);
-}
-int getGoldonFace(long long s, int face) {
-    return (s >> (face * 4)) & 15;
-}
-
-long long makeState(int nbottombit, int gcube, int faceg, long long antS, int antF, int goldidx) {
-    long long fg = antS & 0xFFFFFF;
-    fg = fg & ~((long long)15 << (antF*4));
-    fg = fg | ((long long)(goldidx & 15)) << (antF * 4);
-    return ((long long)nbottombit << 36) | ((long long)gcube << 30) | ((long long)faceg << 24) | fg;
-}
+        return (back << 15) | (top << 12) | (west << 9) | (east << 6) | (front << 3) | bottom;
+}   
 
 
-struct Cube {
-    long long pos;
-    int bottom;
-    int gold;
-    int faceG;
-};
-
-int moveCube(int face, int dir, Orientation &ori) {
-    int aux;
-    if (dir == 0) {
-        aux = ori.back;
-        ori.back = face;
-        ori.bottom = ori.front;
-        ori.front = ori.top;
-        ori.top = aux; 
-    } else if (dir == 1) {
-        aux = ori.front;
-        ori.front = face;
-        ori.bottom = ori.back;
-        ori.back = ori.top;
-        ori.top = aux;
-    } else if (dir == 2) {
-        aux = ori.west;
-        ori.west = face;
-        ori.bottom = ori.east;
-        ori.east = ori.top;
-        ori.top = aux;
-    } else if (dir == 3) {
-        aux = ori.east;
-        ori.east = face;
-        ori.bottom = ori.west;
-        ori.west = ori.top;
-        ori.top = aux;
-    }
-
-    return ori.bottom;
-}
-
-int collectAllGold(pair<long long, long long> &init, int R, int C,int A, int B, Orientation &ori, vector<long long> golds) {
+int collectAllGolds(State init, int R, int C, int A, int B) {
     dist.clear();
-    using State = pair<int, pair<long long, long long>>;
-    priority_queue<State, vector<State>, greater<State>> pq;
+    dist.reserve(3000000);
+
+    using rename_state = pair<int, State>;
+    priority_queue<rename_state, vector<rename_state>, greater<rename_state>> pq;
     dist[init] = 0;
     pq.push({0, init});
-
-    int du;
-    pair<long long, long long> u;
-    bool done = true;
-    while (!pq.empty() && done) {
-        State top = pq.top();
+    
+    int ans = -1;
+    while (!pq.empty() && ans == -1) {
+        rename_state top = pq.top();
         pq.pop();
-        du = top.first, u = top.second;
+        int cost = top.first;
+        State initState = top.second;
+        if (cost == dist[initState]) {
+            if (initState.ifgold != 63) {
+                int newc, newr;
+                int c = initState.pos & 7;
+                int r = initState.pos >> 3;
+                for (int d = 0; d < 4; d++) {
 
-        if (du == dist[u]) {
-            long long pos = u.first;
-            int bottom = getbottom(u.second);
-            int gcube = getgCube(u.second);
-            int faceg = getFaceg(u.second);
-            int col = pos & 7;
-            int row = pos >> 3;
+                    newc = c + dc[d];
+                    newr = r + dr[d];
+                    if (newc >= 0 && newc < C && newr >= 0 && newr < R) {
+                        int newposcube = newr << 3 | newc;
+                        State newState(newposcube, initState.move(d), initState.ifgold, initState.goldpos);
 
-            if (faceg != 63) {
-                for (int m = 0; m < 4; m++) {
-                int nr = row + dr[m];
-                int nc = col + dc[m];
-
-                    if (nr >= 0 && nr < R && nc >= 0 && nc < C) {
-                        Orientation tmp = ori;
-                        long long npos = (long long)nr << 3 | nc;
-                        int nbottom = moveCube(bottom, m, tmp);
-                        int nbottombit = faceID[nbottom];
-                        int ngcube = gcube;
-                        int nfaceg = faceg;
-
-
-                        int goldidx = -1, i = 0;
-                        bool flag = true;
-                        while (i < 6 && flag) {
-                            // en caso de que me vaya a mover a una celda con oro y no haya sido recogido ese oro
-                            if (npos == golds[i] && !(ngcube & (1 << i))) {
-                                goldidx = i;
-                                flag = false;
-                            }
-                            ++i;
+                        int cellhasgold = -1;
+                        if (((newState.goldpos >> ((newr*C) + newc)) & 1) == 1) {
+                            cellhasgold = newposcube;
                         }
 
-                        int cost;
-                        bool cellhasgold = goldidx != -1;
-                        bool facehasgold = (nfaceg & (1 << nbottombit)) == 1;
-                        if (cellhasgold && !facehasgold) {
-                            ngcube = ngcube | (1 << goldidx);
-                            nfaceg = nfaceg | (1 << nbottombit);
-                            cost = B;
+                        int newcost;
+                        int bottom = newState.packedori & 7;
+                        bool facesHasgold = (newState.ifgold & (1 << bottom)) != 0;
+                        // cara sin oro y celda sin oro costo A
+                        if (!facesHasgold && cellhasgold == -1) {
+                            newcost = A + cost;
+                        //cara sin oro y celda con oro costo B
+                        } else if (!facesHasgold && cellhasgold != -1) {
+                            newState.addGoldtoFace(cellhasgold, C);
+                            newcost = B + cost;
+                        // cara con oro y celda con oro costo A
+                        } else if (facesHasgold && cellhasgold != -1) {
+                            newcost = A + cost;
+                            // cara con oro y celda sin oro A
+                        } else if (facesHasgold && cellhasgold == -1) {
+                            newState.subGoldfromFace(C);
+                            newcost = A + cost;
+                        }
 
-                            long long nfgm = makeState(nbottombit, ngcube, nfaceg, u.second, nbottombit, goldidx);
-                            pair<long long, long long> nState = {npos, nfgm};
-                            int ndu = du + cost;
-                            if (dist.count(nState) == 0 || ndu < dist[nState]) {
-                                dist[nState] = ndu;
-                                pq.push({ndu, nState});
-                            }
-                        } else if (!cellhasgold && facehasgold) {
-                            int gold = getGoldonFace(u.second, nbottombit);
-                            ngcube = ngcube & ~(1 << gold);
-                            nfaceg = nfaceg & ~(1 << nbottombit);
-                            golds[gold] = npos;
-                            cost = A;
-                            
-                            long long nfgm = makeState(nbottombit, ngcube, nfaceg, u.second, nbottombit, 15);
-                            pair<long long, long long> nState = {npos, nfgm};
-                            int ndu = du + cost;
-                            if (dist.count(nState) == 0 || ndu < dist[nState]){
-                                dist[nState] = ndu;
-                                pq.push({ndu, nState});
-                            }
-                        } else {
-                            cost = A;
-                            int gold = getGoldonFace(u.second, nbottombit);
-                            long long nfgm = makeState(nbottombit, ngcube, nfaceg, u.second, nbottombit, gold);
-                            pair<long long, long long> nState = {npos, nfgm};
-                            int ndu = du + cost;
-                            if (dist.count(nState) == 0 || ndu < dist[nState]) {
-                                dist[nState] = ndu;
-                                pq.push({ndu, nState});
-                            }
+                        if (dist.count(newState) == 0 || newcost < dist[newState]) {
+                                dist[newState] = newcost;
+                                pq.push({newcost, newState});
                         }
                     }
                 }
             } else {
-                done = false;
+                ans = cost;
             }
         }
     }
-    if (!done) {
-        du = -1;
+
+    return ans;
+}
+
+
+void calculateOrientations() {
+    unordered_map<int, bool> visited;
+    queue<int> pq;
+    int initOri = packOri(0,1,2,3,4,5);
+    visited[initOri] = true;
+    pq.push(initOri);
+    
+    int u;
+    while (!pq.empty()) {
+        u = pq.front();
+        pq.pop();
+        int bottom = u & 7;
+        int front = (u >> 3) & 7;
+        int v;
+
+        for (int d = 0; d < 4; d++) {
+            v = moveCube(u, d);
+            int nbottom = v & 7;
+            int nfront = (v >> 3) & 7;  
+            orientations[bottom][front][d] = (nfront << 3) | nbottom;
+
+            if (visited.count(v) == 0) {
+                visited[v] = true;
+                pq.push(v);
+            }            
+        }
     }
-    return du;
+
 }
 
 int main() {
+    calculateOrientations();
     int T, R, C, A, B;
     cin >> T;
 
     while (T--) {
         cin >> R >> C >> A >> B;
         vector<vector<char>> map(R, vector<char>(C));
-        vector<long long> golds;
         string row;
-        int i = 0, j;
-        long long cpos;
 
+        int i = 0, j;
+        int cpos;
+        long long goldpos = 0;
+        int shift = 0;
         while (i < R) {
             cin >> row;
             j = 0;
             while (j < C) {
                 map[i][j] = row[j];
                 if (map[i][j] == 'G') {
-                    long long pos = i << 3 | j;
-                    golds.push_back(pos);
+                    goldpos = goldpos | ((long long)1 << ((i*C) + j));
+                    ++shift;
                 } else if (map[i][j] == 'S') {
                     cpos = i << 3 | j;
                 }
@@ -240,16 +234,15 @@ int main() {
             }
             ++i;
         }
-        Orientation orientation = {1, 2, 8, 4, 32, 16};
-        long long fgm = mixInf(0,0,0);
-        pair<long long, long long> state = {cpos, fgm};
-        // printM(map);
-        int result = collectAllGold(state, R, C, A, B, orientation, golds);
+        int initori = (1 << 3) | 0;
+        State initState(cpos, initori, 0, goldpos);
 
-        cout << result << endl;
-         break;
+        int result = collectAllGolds(initState, R, C, A, B);
+        if (result == -1){
+            cout << "Oh my God, they killed Kenny!" << endl;
+        } else {
+            cout << "Screw you guys, I got all the gold for "<< result << " cost!" << endl;
+        }
     }
-
-
     return 0;
 }
