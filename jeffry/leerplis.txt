@@ -1,0 +1,8 @@
+aqui en esta carpeta está el cambio que hice en la noche
+de el precalculo, hice uso de un bfs modificado para ir expandiendo
+las orientaciones para ir alcanzando el numero de combinaciones maximo de orientaciones
+para un dado, dentro del bfs asigno las orientaciones en el arreglo de orientations
+funciona de modo que para una configuracion inicial de la orientacion si lo muevo al norte
+
+norte = 0 entonces d = 0
+orientations[bottom][front][d] = esto retorna cual es el siguiente bottom y front al realizar ese movimiento
